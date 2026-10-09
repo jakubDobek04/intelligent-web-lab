@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+import math
 
 app = Flask(__name__)
 
@@ -16,7 +17,20 @@ def health():
 
 @app.route("/api/products")
 def products():
-    return jsonify(PRODUCTS)
+    if "max_price" not in request.args:
+        return jsonify(PRODUCTS)
+
+    max_price = request.args.get("max_price", type=float)
+
+    if max_price is None or not math.isfinite(max_price) or max_price < 0:
+        return jsonify({"error": "invalid max_price"}), 400
+
+    filtered = [
+        p for p in PRODUCTS
+        if p["cena"] <= max_price
+    ]
+
+    return jsonify(filtered)
 
 @app.route("/api/products/<int:product_id>")
 def product(product_id):
