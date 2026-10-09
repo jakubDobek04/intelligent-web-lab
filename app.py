@@ -41,10 +41,45 @@ def product(product_id):
 
 @app.route("/api/products", methods=["POST"])
 def add_product():
-    data = request.get_json()
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({"error": "JSON must be an object"}), 400
+
+    if "id" in data:
+        return jsonify({"error": "id is assigned by server"}), 400
+
+    required = ["nazwa", "kategoria", "opis", "cena"]
+
+    if any(field not in data for field in required):
+        return jsonify({"error": "missing required field"}), 400
+
+    for field in ["nazwa", "kategoria", "opis"]:
+        if not isinstance(data[field], str) or not data[field].strip():
+            return jsonify({"error": f"invalid field: {field}"}), 400
+
+    cena = data["cena"]
+
+    if (
+        isinstance(cena, bool)
+        or not isinstance(cena, (int, float))
+        or not math.isfinite(cena)
+        or cena < 0
+    ):
+        return jsonify({"error": "invalid cena"}), 400
+
     new_id = max((p["id"] for p in PRODUCTS), default=0) + 1
-    new_product = {**data, "id": new_id}
+
+    new_product = {
+        "id": new_id,
+        "nazwa": data["nazwa"],
+        "kategoria": data["kategoria"],
+        "opis": data["opis"],
+        "cena": cena
+    }
+
     PRODUCTS.append(new_product)
+
     return jsonify(new_product), 201
 
 if __name__ == "__main__":
