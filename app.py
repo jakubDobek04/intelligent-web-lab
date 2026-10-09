@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -17,6 +17,21 @@ def health():
 @app.route("/api/products")
 def products():
     return jsonify(PRODUCTS)
+
+@app.route("/api/products/<int:product_id>")
+def product(product_id):
+    item = next((p for p in PRODUCTS if p["id"] == product_id), None)
+    if item is None:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(item)
+
+@app.route("/api/products", methods=["POST"])
+def add_product():
+    data = request.get_json()
+    new_id = max((p["id"] for p in PRODUCTS), default=0) + 1
+    new_product = {**data, "id": new_id}
+    PRODUCTS.append(new_product)
+    return jsonify(new_product), 201
 
 if __name__ == "__main__":
     app.run(debug=True)
